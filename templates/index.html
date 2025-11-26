@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Painel de Tarefas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10">
+    <h1 class="text-4xl font-extrabold mb-8">Painel de Tarefas</h1>
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg">
+        <form id="task-form" class="flex mb-6">
+            <input id="task-input" type="text" placeholder="Nova tarefa..."
+                   class="flex-grow rounded-l px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-r">Adicionar</button>
+        </form>
+        <ul id="task-list" class="space-y-2"></ul>
+    </div>
+<script>
+const apiBase = "/api/tasks";
+const taskForm = document.getElementById("task-form");
+const taskInput = document.getElementById("task-input");
+const taskList = document.getElementById("task-list");
+
+async function fetchTasks() {
+    const res = await fetch(apiBase);
+    const data = await res.json();
+    renderTasks(data);
+}
+
+function renderTasks(tasks) {
+    taskList.innerHTML = '';
+    tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.className = "flex items-center justify-between bg-gray-50 p-3 rounded shadow";
+        li.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <input type="checkbox" ${task.completed ? "checked" : ""} class="h-5 w-5 accent-blue-600"/>
+                <span class="${task.completed ? "line-through text-gray-400" : ""}">${task.title}</span>
+            </div>
+            <button class="text-red-500 hover:text-red-700 font-bold">x</button>
+        `;
+        const checkbox = li.querySelector("input[type=checkbox]");
+        const deleteBtn = li.querySelector("button");
+        checkbox.onclick = async () => {
+            await fetch(`${apiBase}/${task.id}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({completed: !task.completed})
+            });
+            fetchTasks();
+        };
+        deleteBtn.onclick = async () => {
+            if (confirm('Remover tarefa?')) {
+                await fetch(`${apiBase}/${task.id}`, {method: "DELETE"});
+                fetchTasks();
+            }
+        };
+        taskList.appendChild(li);
+    });
+}
+
+taskForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const title = taskInput.value.trim();
+    if (!title) return alert("Digite uma tarefa.");
+    await fetch(apiBase, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({title})
+    });
+    taskInput.value = "";
+    fetchTasks();
+};
+
+window.onload = fetchTasks;
+</script>
+</body>
+</html>
