@@ -7,7 +7,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-# Crie as tabelas assim na inicialização (com contexto do app)
 with app.app_context():
     db.create_all()
 
